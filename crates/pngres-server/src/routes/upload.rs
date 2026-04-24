@@ -1,10 +1,13 @@
-use axum::extract::{Multipart, State};
+use std::net::SocketAddr;
+
+use axum::extract::{ConnectInfo, Multipart, State};
 use axum::Json;
 use serde::Serialize;
 
 use pngres_core::{encode_bytes, EncodeOptions};
 
 use crate::error::AppError;
+use crate::events::{now_ts, Event};
 use crate::state::AppState;
 
 #[derive(Serialize)]
@@ -14,12 +17,16 @@ pub struct UploadResponse {
     pub mime: String,
     pub size: u64,
     pub num_monkes: u32,
+    pub uploaded_from: Option<String>,
 }
 
 pub async fn upload(
     State(state): State<AppState>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     mut multipart: Multipart,
 ) -> Result<Json<UploadResponse>, AppError> {
+    let peer = Some(addr.ip().to_string());
+
     let mut filename: Option<String> = None;
     let mut mime: Option<String> = None;
     let mut data: Option<Vec<u8>> = None;
@@ -69,7 +76,20 @@ pub async fn upload(
     for shard in &shards {
         store.write_shard(&id, shard, manifest.num_monkes).await?;
     }
-    state.index.insert(manifest.clone()).await;
+    state
+        .index
+        .insert(manifest.clone(), peer.clone())
+        .await;
+
+    state.events.emit(Event::Upload {
+        ts: now_ts(),
+        peer: peer.clone(),
+        id: id.clone(),
+        name: manifest.filename.clone(),
+        mime: manifest.mime.clone(),
+        size: manifest.total_size,
+        num_monkes: manifest.num_monkes,
+    });
 
     Ok(Json(UploadResponse {
         id,
@@ -77,5 +97,6 @@ pub async fn upload(
         mime: manifest.mime,
         size: manifest.total_size,
         num_monkes: manifest.num_monkes,
+        uploaded_from: peer,
     }))
 }

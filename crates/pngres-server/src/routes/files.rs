@@ -1,5 +1,7 @@
+use std::net::SocketAddr;
+
 use axum::body::Body;
-use axum::extract::{Path, Query, State};
+use axum::extract::{ConnectInfo, Path, Query, State};
 use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::Json;
@@ -8,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use pngres_core::read_range;
 
 use crate::error::AppError;
+use crate::events::{now_ts, Event};
 use crate::index::FileSummary;
 use crate::state::AppState;
 
@@ -63,18 +66,32 @@ pub async fn get(
 
 pub async fn delete_file(
     State(state): State<AppState>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Path(id): Path<String>,
 ) -> Result<StatusCode, AppError> {
     let parsed = uuid::Uuid::parse_str(&id).map_err(|_| AppError::NotFound(id.clone()))?;
+    let name = state
+        .index
+        .get(&parsed)
+        .await
+        .map(|e| e.manifest.filename.clone())
+        .unwrap_or_else(|| id.clone());
     let existed = state.index.remove(&parsed).await?;
     if !existed {
         return Err(AppError::NotFound(id));
     }
+    state.events.emit(Event::Delete {
+        ts: now_ts(),
+        peer: Some(addr.ip().to_string()),
+        id,
+        name,
+    });
     Ok(StatusCode::NO_CONTENT)
 }
 
 pub async fn download(
     State(state): State<AppState>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Path(id): Path<String>,
 ) -> Result<Response, AppError> {
     let entry = state
@@ -95,6 +112,14 @@ pub async fn download(
     })
     .await
     .map_err(|e| AppError::Other(format!("join: {e}")))??;
+
+    state.events.emit(Event::Download {
+        ts: now_ts(),
+        peer: Some(addr.ip().to_string()),
+        id: id.clone(),
+        name: name.clone(),
+        size: bytes.len() as u64,
+    });
 
     let mut headers = HeaderMap::new();
     headers.insert(
@@ -144,10 +169,12 @@ pub struct MonkeIndex {
     pub per_monke_payload_bytes: i64,
     pub file_hash: String,
     pub monkes: Vec<MonkeRef>,
+    pub uploaded_from: Option<String>,
 }
 
 pub async fn list_monkes(
     State(state): State<AppState>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Path(id): Path<String>,
 ) -> Result<Json<MonkeIndex>, AppError> {
     let e = state
@@ -170,6 +197,14 @@ pub async fn list_monkes(
         })
         .collect();
 
+    state.events.emit(Event::IndexListed {
+        ts: now_ts(),
+        peer: Some(addr.ip().to_string()),
+        id: id.clone(),
+        name: m.filename.clone(),
+        num_monkes: total,
+    });
+
     Ok(Json(MonkeIndex {
         id: id.clone(),
         name: m.filename.clone(),
@@ -180,11 +215,13 @@ pub async fn list_monkes(
         per_monke_payload_bytes: m.payload_per_monke as i64,
         file_hash: pngres_core::hash_to_hex(&m.file_hash),
         monkes,
+        uploaded_from: e.uploaded_from.clone(),
     }))
 }
 
 pub async fn get_monke(
     State(state): State<AppState>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Path((id, n)): Path<(String, u32)>,
 ) -> Result<Response, AppError> {
     let e = state
@@ -203,6 +240,16 @@ pub async fn get_monke(
     let bytes = tokio::fs::read(&path)
         .await
         .map_err(|_| AppError::NotFound(format!("shard file: {}", path.display())))?;
+
+    state.events.emit(Event::ShardServed {
+        ts: now_ts(),
+        peer: Some(addr.ip().to_string()),
+        id: id.clone(),
+        name: e.manifest.filename.clone(),
+        chunk_index: n,
+        total,
+        bytes: bytes.len() as u64,
+    });
 
     let mut headers = HeaderMap::new();
     headers.insert(header::CONTENT_TYPE, HeaderValue::from_static("image/png"));

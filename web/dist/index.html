@@ -16,53 +16,77 @@
     </div>
   </header>
 
-  <main>
-    <section class="stats" aria-label="Jungle statistics">
-      <div class="stat">
-        <div class="num" id="stat-monkes">—</div>
-        <div class="label">Monkes Currently Employed</div>
-      </div>
-      <div class="stat">
-        <div class="num" id="stat-bytes">—</div>
-        <div class="label">Bytes Under Banana Management</div>
-      </div>
-      <div class="stat">
-        <div class="num" id="stat-files">—</div>
-        <div class="label">Files in the Canopy</div>
-      </div>
-    </section>
-
-    <section class="uploader" id="drop-zone">
-      <form id="upload-form">
-        <label class="drop-area" id="drop-area">
-          <input type="file" id="file-input" hidden>
-          <div class="drop-icon">+</div>
-          <div class="drop-head">Drag files here to summon monkes.</div>
-          <div class="drop-sub">Each file will be escorted byte-by-byte into a colony of PNG monkes.</div>
-          <div class="drop-chosen" id="chosen-name"></div>
-        </label>
-        <div class="upload-row">
-          <button type="submit" id="upload-btn" disabled>Summon the Monkes</button>
-          <div class="progress" id="progress-wrap" hidden>
-            <div class="progress-bar" id="progress-bar"></div>
-          </div>
-          <div class="upload-note" id="upload-note"></div>
+  <main class="layout">
+    <section class="main-col">
+      <section class="stats" aria-label="Jungle statistics">
+        <div class="stat">
+          <div class="num" id="stat-monkes">—</div>
+          <div class="label">Monkes Currently Employed</div>
         </div>
-      </form>
+        <div class="stat">
+          <div class="num" id="stat-bytes">—</div>
+          <div class="label">Bytes Under Banana Management</div>
+        </div>
+        <div class="stat">
+          <div class="num" id="stat-files">—</div>
+          <div class="label">Files in the Canopy</div>
+        </div>
+      </section>
+
+      <section class="uploader">
+        <form id="upload-form">
+          <label class="drop-area" id="drop-area">
+            <input type="file" id="file-input" hidden>
+            <div class="drop-icon">+</div>
+            <div class="drop-head">Drag files here to summon monkes.</div>
+            <div class="drop-sub">Each file will be escorted byte-by-byte into a colony of PNG monkes.</div>
+            <div class="drop-chosen" id="chosen-name"></div>
+          </label>
+          <div class="upload-row">
+            <button type="submit" id="upload-btn" disabled>Summon the Monkes</button>
+            <div class="progress" id="progress-wrap" hidden>
+              <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            <div class="upload-note" id="upload-note"></div>
+          </div>
+        </form>
+      </section>
+
+      <section class="files">
+        <div class="files-head">
+          <h2>The Herd</h2>
+          <button id="refresh-btn" title="Refresh the herd">↻</button>
+        </div>
+        <ul id="file-list" class="file-list"></ul>
+        <div id="empty-state" class="empty-state">
+          No monkes have been summoned yet. The jungle is silent. Eerie.
+        </div>
+      </section>
     </section>
 
-    <section class="files">
-      <div class="files-head">
-        <h2>The Herd</h2>
-        <button id="refresh-btn" title="Refresh the herd">↻</button>
-      </div>
-      <ul id="file-list" class="file-list"></ul>
-      <div id="empty-state" class="empty-state">
-        No monkes have been summoned yet. The jungle is silent. Eerie.
-      </div>
-    </section>
+    <aside class="side-col">
+      <section class="peers-card">
+        <div class="card-head">
+          <h3>Peers Recently Involved</h3>
+          <span class="pulse" id="live-dot" title="live event stream"></span>
+        </div>
+        <ul id="peer-list" class="peer-list">
+          <li class="empty">no peers yet</li>
+        </ul>
+      </section>
+      <section class="activity-card">
+        <div class="card-head">
+          <h3>Live Activity</h3>
+          <button id="clear-activity" class="ghost">clear</button>
+        </div>
+        <ul id="activity-list" class="activity-list">
+          <li class="empty">waiting for monke chatter…</li>
+        </ul>
+      </section>
+    </aside>
   </main>
 
+  <!-- Player dialog (video/audio) -->
   <dialog id="player">
     <header class="player-head">
       <span id="player-title">The Monkes Are Projecting</span>
@@ -72,8 +96,38 @@
     <p class="player-note">The monkes will seek. Watch the network tab — every scrub = fresh 206s.</p>
   </dialog>
 
+  <!-- LSB amplification modal -->
+  <dialog id="monke-modal">
+    <header class="modal-head">
+      <span id="monke-modal-title">Monke</span>
+      <button id="monke-modal-close" aria-label="close">×</button>
+    </header>
+    <div class="modal-body">
+      <div class="monke-meta" id="monke-modal-meta"></div>
+      <div class="canvas-row">
+        <figure>
+          <figcaption>Original monke.png (cover)</figcaption>
+          <canvas id="canvas-cover"></canvas>
+        </figure>
+        <figure>
+          <figcaption>This shard — looks identical</figcaption>
+          <canvas id="canvas-shard"></canvas>
+        </figure>
+        <figure>
+          <figcaption>LSB × <span id="lsb-amp-bits">?</span> — the hidden payload</figcaption>
+          <canvas id="canvas-lsb"></canvas>
+        </figure>
+      </div>
+      <p class="modal-note">
+        The left and middle panels are visually indistinguishable: the data sits in the
+        bottom bits of each pixel byte. The right panel isolates those bits and amplifies
+        them; what looks like static is literally your file.
+      </p>
+    </div>
+  </dialog>
+
   <footer>
-    <p>served by pngres-server · <a href="/healthz">healthz</a> · <a href="https://github.com/arkady232/PNGres">source</a></p>
+    <p>served by pngres-server · <a href="/healthz">healthz</a> · <a href="https://github.com/ark-232/pngres">source</a></p>
   </footer>
 
   <script src="/static/app.js"></script>

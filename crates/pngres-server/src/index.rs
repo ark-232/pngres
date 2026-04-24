@@ -20,6 +20,7 @@ use crate::storage::FsStore;
 #[derive(Clone, Debug)]
 pub struct IndexEntry {
     pub manifest: Manifest,
+    pub uploaded_from: Option<String>,
 }
 
 impl IndexEntry {
@@ -34,12 +35,11 @@ impl IndexEntry {
             per_monke_payload_bytes: self.manifest.payload_per_monke as i64,
             created_at: self.manifest.created_at as i64,
             blake3: pngres_core::hash_to_hex(&self.manifest.file_hash),
+            uploaded_from: self.uploaded_from.clone(),
         }
     }
 }
 
-/// Wire shape identical to the old `db::FileRow` so API consumers don't
-/// notice the storage swap.
 #[derive(Clone, Debug, Serialize)]
 pub struct FileSummary {
     pub id: String,
@@ -51,6 +51,7 @@ pub struct FileSummary {
     pub per_monke_payload_bytes: i64,
     pub created_at: i64,
     pub blake3: String,
+    pub uploaded_from: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -115,7 +116,13 @@ impl Index {
         let mut guard = self.entries.write().await;
         guard.clear();
         for (id, manifest) in loaded {
-            guard.insert(id, IndexEntry { manifest });
+            guard.insert(
+                id,
+                IndexEntry {
+                    manifest,
+                    uploaded_from: None,
+                },
+            );
         }
         let n = guard.len();
         tracing::info!(files = n, "index ready");
@@ -147,11 +154,14 @@ impl Index {
             .collect()
     }
 
-    pub async fn insert(&self, manifest: Manifest) {
-        self.entries
-            .write()
-            .await
-            .insert(manifest.file_id, IndexEntry { manifest });
+    pub async fn insert(&self, manifest: Manifest, uploaded_from: Option<String>) {
+        self.entries.write().await.insert(
+            manifest.file_id,
+            IndexEntry {
+                manifest,
+                uploaded_from,
+            },
+        );
     }
 
     /// Remove from cache + disk.

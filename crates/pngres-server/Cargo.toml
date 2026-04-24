@@ -21,6 +21,7 @@ axum          = { version = "0.7", features = ["multipart", "macros", "http2"] }
 axum-extra    = { version = "0.9", features = ["typed-header"] }
 tokio         = { version = "1", features = ["full"] }
 tokio-util    = { version = "0.7", features = ["io"] }
+tokio-stream  = { version = "0.1", features = ["sync"] }
 tower         = "0.5"
 tower-http    = { version = "0.5", features = ["fs", "trace", "cors"] }
 serde         = { workspace = true }

@@ -75,6 +75,9 @@ The `pull-monkes` variant downloads the *raw* PNG shards; `pngres decode` then r
 - **Zip export/import** — `--zip` writes a single `.zip` of monkes; `decode` auto-detects dir vs. zip input.
 - **Tunable density** — 1, 2, or 4 LSB bits per channel, trading image quality for monke count.
 - **P2P monke pulling** — connect to another PNGres instance and fetch raw shards or decoded files straight over HTTP. The shard URLs are content-cacheable forever (`Cache-Control: immutable`) since every monke carries its own BLAKE3.
+- **Live activity stream** — `/api/events` is a Server-Sent Events feed. Every upload, download, range-stream, P2P shard pull, discover, and delete is emitted in real time with the peer IP. The UI has a live ticker: *"203.0.113.42 pulled monke 3 of 7 from clip.mp4"*.
+- **Monke explorer** — click "explore herd" on any file in the UI. The whole herd unfolds as a grid of thumbnails, each showing its chunk index and payload size. Click any monke to open the **LSB amplification modal**: three side-by-side canvases showing the original cover, this shard (visually identical), and the low-bit XOR-amplified diff that reveals exactly where your data is hidden in the pixels.
+- **Peer list** — `/api/peers` returns the unique IPs that have touched the server recently, with event counts and last-seen timestamps. Shown live in the sidebar.
 - **Streaming upload** and **safe multipart parsing** up to 2 GiB per file.
 - **Soft-delete with undo room** — metadata rows survive, shards are cleaned.
 - **MIME sniffing** — if your browser / curl sent `application/octet-stream`, the server looks at the bytes and figures it out.

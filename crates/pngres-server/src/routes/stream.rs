@@ -1,7 +1,9 @@
 //! Range-aware streaming endpoint. Feeds <video> tags.
 
+use std::net::SocketAddr;
+
 use axum::body::Body;
-use axum::extract::{Path, State};
+use axum::extract::{ConnectInfo, Path, State};
 use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
 use axum::response::{IntoResponse, Response};
 use futures::stream::{self, StreamExt};
@@ -9,12 +11,14 @@ use http_range_header::parse_range_header;
 use pngres_core::{read_range, Manifest};
 
 use crate::error::AppError;
+use crate::events::{now_ts, Event};
 use crate::state::AppState;
 
 const OPEN_ENDED_CAP: u64 = 8 * 1024 * 1024;
 
 pub async fn stream(
     State(state): State<AppState>,
+    ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Path(id): Path<String>,
     headers: HeaderMap,
 ) -> Result<Response, AppError> {
@@ -25,10 +29,22 @@ pub async fn stream(
         .ok_or_else(|| AppError::NotFound(id.clone()))?;
     let manifest = entry.manifest;
     let total = manifest.total_size;
+    let name = manifest.filename.clone();
+    let peer = addr.ip().to_string();
 
     let range_header = headers.get(header::RANGE).and_then(|v| v.to_str().ok());
     if range_header.is_none() {
-        return full_response(state, &id, &manifest).await;
+        let resp = full_response(state.clone(), &id, &manifest).await?;
+        state.events.emit(Event::Stream {
+            ts: now_ts(),
+            peer: Some(peer),
+            id,
+            name,
+            range_start: 0,
+            range_end_inclusive: total.saturating_sub(1),
+            slice_len: total,
+        });
+        return Ok(resp);
     }
 
     let parsed = parse_range_header(range_header.unwrap())
@@ -50,7 +66,7 @@ pub async fn stream(
     };
     let slice_len = end_inclusive - req_start + 1;
 
-    let body = stream_range(state, id.clone(), manifest.clone(), req_start..end_inclusive + 1);
+    let body = stream_range(state.clone(), id.clone(), manifest.clone(), req_start..end_inclusive + 1);
 
     let mut h = HeaderMap::new();
     h.insert(header::CONTENT_TYPE, mime_header(&manifest.mime));
@@ -61,6 +77,17 @@ pub async fn stream(
             .unwrap(),
     );
     h.insert(header::CONTENT_LENGTH, HeaderValue::from(slice_len));
+
+    state.events.emit(Event::Stream {
+        ts: now_ts(),
+        peer: Some(peer),
+        id,
+        name,
+        range_start: req_start,
+        range_end_inclusive: end_inclusive,
+        slice_len,
+    });
+
     Ok((StatusCode::PARTIAL_CONTENT, h, Body::from_stream(body)).into_response())
 }
 

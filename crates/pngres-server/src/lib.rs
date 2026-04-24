@@ -7,6 +7,7 @@
 pub mod assets;
 pub mod config;
 pub mod error;
+pub mod events;
 pub mod index;
 pub mod routes;
 pub mod state;
@@ -16,10 +17,16 @@ pub use config::ServerConfig;
 pub use state::AppState;
 
 pub async fn run(cfg: ServerConfig) -> anyhow::Result<()> {
+    use std::net::SocketAddr;
+
     let state = AppState::init(&cfg).await?;
     let app = routes::router(state);
     let listener = tokio::net::TcpListener::bind((cfg.host.as_str(), cfg.port)).await?;
     tracing::info!("pngres-server listening on http://{}:{}", cfg.host, cfg.port);
-    axum::serve(listener, app).await?;
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await?;
     Ok(())
 }

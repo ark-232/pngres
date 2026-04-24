@@ -6,6 +6,7 @@ use tower_http::trace::TraceLayer;
 
 use crate::state::AppState;
 
+mod events;
 mod files;
 mod pages;
 mod stats;
@@ -15,8 +16,6 @@ mod upload;
 pub fn router(state: AppState) -> Router {
     let max = state.max_upload_bytes;
 
-    // Upload route has its own (very large) body limit so multipart doesn't hit
-    // axum's default 2 MiB cap. Other routes stay bounded.
     let upload_router = Router::new()
         .route("/upload", post(upload::upload))
         .layer(DefaultBodyLimit::max(max));
@@ -29,6 +28,9 @@ pub fn router(state: AppState) -> Router {
         .route("/files/:id/stream", get(stream::stream))
         .route("/files/:id/monkes", get(files::list_monkes))
         .route("/files/:id/monkes/:n", get(files::get_monke))
+        .route("/events", get(events::sse_events))
+        .route("/activity", get(events::activity_snapshot))
+        .route("/peers", get(events::peers))
         .merge(upload_router);
 
     Router::new()

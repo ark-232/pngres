@@ -68,10 +68,13 @@ fn spawn_server() -> TestServer {
             let shutdown = async move {
                 let _ = rx.await;
             };
-            axum::serve(listener, app)
-                .with_graceful_shutdown(shutdown)
-                .await
-                .expect("serve");
+            axum::serve(
+                listener,
+                app.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+            )
+            .with_graceful_shutdown(shutdown)
+            .await
+            .expect("serve");
         });
     });
 
