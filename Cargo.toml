@@ -1,0 +1,40 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/pngres-core",
+    "crates/pngres-cli",
+    "crates/pngres-server",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+license = "MIT"
+authors = ["PNGres contributors"]
+repository = "https://github.com/arkady232/PNGres"
+
+[workspace.dependencies]
+pngres-core   = { path = "crates/pngres-core" }
+pngres-server = { path = "crates/pngres-server" }
+
+thiserror     = "2"
+anyhow        = "1"
+tracing       = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+serde         = { version = "1", features = ["derive"] }
+serde_json    = "1"
+bytes         = "1"
+uuid          = { version = "1", features = ["v7", "serde"] }
+blake3        = "1"
+tempfile      = "3"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+opt-level = 3
+strip = "symbols"
+
+[profile.bench]
+inherits = "release"
+debug = true

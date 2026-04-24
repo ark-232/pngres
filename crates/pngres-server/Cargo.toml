@@ -1,0 +1,46 @@
+[package]
+name = "pngres-server"
+description = "HTTP server for PNGres. Drag monkes in the browser."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[lib]
+name = "pngres_server"
+path = "src/lib.rs"
+
+[[bin]]
+name = "pngres-server"
+path = "src/main.rs"
+
+[dependencies]
+pngres-core   = { workspace = true }
+axum          = { version = "0.7", features = ["multipart", "macros", "http2"] }
+axum-extra    = { version = "0.9", features = ["typed-header"] }
+tokio         = { version = "1", features = ["full"] }
+tokio-util    = { version = "0.7", features = ["io"] }
+tower         = "0.5"
+tower-http    = { version = "0.5", features = ["fs", "trace", "cors"] }
+serde         = { workspace = true }
+serde_json    = { workspace = true }
+bytes         = { workspace = true }
+uuid          = { workspace = true }
+blake3        = { workspace = true }
+http-range-header = "0.4"
+mime_guess    = "2"
+infer         = "0.16"
+askama        = "0.12"
+rust-embed    = { version = "8", features = ["compression"] }
+futures       = "0.3"
+tracing       = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow        = { workspace = true }
+thiserror     = { workspace = true }
+sha2          = "0.10"
+
+[dev-dependencies]
+tempfile     = { workspace = true }
+reqwest      = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls", "multipart"] }
+pngres-core  = { workspace = true }

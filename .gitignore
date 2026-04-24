@@ -1,0 +1,16 @@
+/target
+**/*.rs.bk
+Cargo.lock.bak
+
+# runtime data — created by the server/CLI at runtime
+/data
+/herd
+/pngres.db
+/pngres.db-wal
+/pngres.db-shm
+
+# editor / os
+.DS_Store
+.idea
+.vscode
+*.swp

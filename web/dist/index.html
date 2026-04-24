@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PNGres — The Monke Database</title>
+  <link rel="icon" type="image/png" href="/static/monke.png">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <header class="hero">
+    <img src="/static/monke.png" alt="monke" class="monke">
+    <div>
+      <h1>PNGres</h1>
+      <p class="tagline">the monke database. file storage with extra steps.</p>
+    </div>
+  </header>
+
+  <main>
+    <section class="stats" aria-label="Jungle statistics">
+      <div class="stat">
+        <div class="num" id="stat-monkes">—</div>
+        <div class="label">Monkes Currently Employed</div>
+      </div>
+      <div class="stat">
+        <div class="num" id="stat-bytes">—</div>
+        <div class="label">Bytes Under Banana Management</div>
+      </div>
+      <div class="stat">
+        <div class="num" id="stat-files">—</div>
+        <div class="label">Files in the Canopy</div>
+      </div>
+    </section>
+
+    <section class="uploader" id="drop-zone">
+      <form id="upload-form">
+        <label class="drop-area" id="drop-area">
+          <input type="file" id="file-input" hidden>
+          <div class="drop-icon">+</div>
+          <div class="drop-head">Drag files here to summon monkes.</div>
+          <div class="drop-sub">Each file will be escorted byte-by-byte into a colony of PNG monkes.</div>
+          <div class="drop-chosen" id="chosen-name"></div>
+        </label>
+        <div class="upload-row">
+          <button type="submit" id="upload-btn" disabled>Summon the Monkes</button>
+          <div class="progress" id="progress-wrap" hidden>
+            <div class="progress-bar" id="progress-bar"></div>
+          </div>
+          <div class="upload-note" id="upload-note"></div>
+        </div>
+      </form>
+    </section>
+
+    <section class="files">
+      <div class="files-head">
+        <h2>The Herd</h2>
+        <button id="refresh-btn" title="Refresh the herd">↻</button>
+      </div>
+      <ul id="file-list" class="file-list"></ul>
+      <div id="empty-state" class="empty-state">
+        No monkes have been summoned yet. The jungle is silent. Eerie.
+      </div>
+    </section>
+  </main>
+
+  <dialog id="player">
+    <header class="player-head">
+      <span id="player-title">The Monkes Are Projecting</span>
+      <button id="player-close" aria-label="close">×</button>
+    </header>
+    <video id="player-video" controls preload="metadata"></video>
+    <p class="player-note">The monkes will seek. Watch the network tab — every scrub = fresh 206s.</p>
+  </dialog>
+
+  <footer>
+    <p>served by pngres-server · <a href="/healthz">healthz</a> · <a href="https://github.com/arkady232/PNGres">source</a></p>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

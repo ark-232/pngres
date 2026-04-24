@@ -1,0 +1,37 @@
+[package]
+name = "pngres-core"
+description = "Encode/decode arbitrary files as herds of monke.png shards."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+png          = "0.17"
+thiserror    = { workspace = true }
+serde        = { workspace = true }
+serde_json   = { workspace = true }
+bytes        = { workspace = true }
+uuid         = { workspace = true }
+blake3       = { workspace = true }
+crc32fast    = "1"
+byteorder    = "1"
+infer        = "0.16"
+rayon        = { version = "1", optional = true }
+memmap2      = { version = "0.9", optional = true }
+tracing      = { workspace = true }
+
+[features]
+default = ["rayon"]
+rayon   = ["dep:rayon"]
+mmap    = ["dep:memmap2"]
+
+[dev-dependencies]
+proptest     = "1"
+tempfile     = { workspace = true }
+criterion    = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "throughput"
+harness = false
