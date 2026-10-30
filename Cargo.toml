@@ -12,7 +12,7 @@ edition = "2021"
 rust-version = "1.85"
 license = "MIT"
 authors = ["PNGres contributors"]
-repository = "https://github.com/arkady232/PNGres"
+repository = "https://github.com/ark-232/pngres"
 
 [workspace.dependencies]
 pngres-core   = { path = "crates/pngres-core" }
